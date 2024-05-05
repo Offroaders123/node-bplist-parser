@@ -4,9 +4,10 @@
 
 import assert from 'assert';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import * as bplist from '../bplistParser.js';
 
-const dirname = path.dirname(new URL(import.meta.url).pathname);
+const dirname = path.dirname(fileURLToPath(new URL(import.meta.url)));
 
 describe('bplist-parser', function () {
   it('iTunes Small', async function () {
