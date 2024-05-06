@@ -49,7 +49,7 @@ export function parseFile<T extends Property>(fileNameOrBuffer: string | Buffer,
         result = parseBuffer(buffer);
         resolve(result);
       } catch (ex) {
-        err = ex;
+        err = ex instanceof Error ? ex : new Error(`${ex}`);
         reject(err);
       } finally {
         callback?.(err, result);
@@ -78,13 +78,13 @@ export function parseFileSync<T extends Property>(fileNameOrBuffer: string | Buf
 
 export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
   // check header
-  const header = buffer.slice(0, 'bplist'.length).toString('utf8');
+  const header = buffer.subarray(0, 'bplist'.length).toString('utf8');
   if (header !== 'bplist') {
     throw new Error("Invalid binary plist. Expected 'bplist' at offset 0.");
   }
 
   // Handle trailer, last 32 bytes of the file
-  const trailer = buffer.slice(buffer.length - 32, buffer.length);
+  const trailer = buffer.subarray(buffer.length - 32, buffer.length);
   // 6 null bytes (index 0 to 5)
   const offsetSize = trailer.readUInt8(6);
   if (debug) {
@@ -115,7 +115,7 @@ export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
   const offsetTable: number[] = [];
 
   for (let i = 0; i < numObjects; i++) {
-    const offsetBytes = buffer.slice(offsetTableOffset + i * offsetSize, offsetTableOffset + (i + 1) * offsetSize);
+    const offsetBytes = buffer.subarray(offsetTableOffset + i * offsetSize, offsetTableOffset + (i + 1) * offsetSize);
     offsetTable[i] = readUInt(offsetBytes, 0);
     if (debug) {
       console.log("Offset for Object #" + i + " is " + offsetTable[i] + " [" + offsetTable[i]!.toString(16) + "]");
@@ -200,7 +200,7 @@ export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
     function parseInteger(): IntegerProperty {
       const length = Math.pow(2, objInfo);
       if (length < maxObjectSize) {
-        const data = buffer.slice(offset + 1, offset + 1 + length);
+        const data = buffer.subarray(offset + 1, offset + 1 + length);
         if (length === 16) {
           const str = bufferToHexString(data);
           return BigInt(`0x${str}`);
@@ -218,7 +218,7 @@ export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
     function parseUID(): UIDProperty {
       const length = objInfo + 1;
       if (length < maxObjectSize) {
-        return new UID(readUInt(buffer.slice(offset + 1, offset + 1 + length)));
+        return new UID(readUInt(buffer.subarray(offset + 1, offset + 1 + length)));
       }
       throw new Error("Too little heap space available! Wanted to read " + length + " bytes, but only " + maxObjectSize + " are available.");
     }
@@ -226,13 +226,14 @@ export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
     function parseReal(): RealProperty {
       const length = Math.pow(2, objInfo);
       if (length < maxObjectSize) {
-        const realBuffer = buffer.slice(offset + 1, offset + 1 + length);
+        const realBuffer = buffer.subarray(offset + 1, offset + 1 + length);
         if (length === 4) {
           return realBuffer.readFloatBE(0);
         }
         if (length === 8) {
           return realBuffer.readDoubleBE(0);
         }
+        throw new Error(`Length for 'real' value should be '4' or '8', received ${length}`); // not sure if this can really happen
       } else {
         throw new Error("Too little heap space available! Wanted to read " + length + " bytes, but only " + maxObjectSize + " are available.");
       }
@@ -242,7 +243,7 @@ export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
       if (objInfo != 0x3) {
         console.error("Unknown date type :" + objInfo + ". Parsing anyway...");
       }
-      const dateBuffer = buffer.slice(offset + 1, offset + 9);
+      const dateBuffer = buffer.subarray(offset + 1, offset + 9);
       return new Date(EPOCH + (1000 * dateBuffer.readDoubleBE(0)));
     }
 
@@ -259,13 +260,13 @@ export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
         const intLength = Math.pow(2, intInfo);
         dataoffset = 2 + intLength;
         if (intLength < 3) {
-          length = readUInt(buffer.slice(offset + 2, offset + 2 + intLength));
+          length = readUInt(buffer.subarray(offset + 2, offset + 2 + intLength));
         } else {
-          length = readUInt(buffer.slice(offset + 2, offset + 2 + intLength));
+          length = readUInt(buffer.subarray(offset + 2, offset + 2 + intLength));
         }
       }
       if (length < maxObjectSize) {
-        return buffer.slice(offset + dataoffset, offset + dataoffset + length);
+        return buffer.subarray(offset + dataoffset, offset + dataoffset + length);
       }
       throw new Error("Too little heap space available! Wanted to read " + length + " bytes, but only " + maxObjectSize + " are available.");
     }
@@ -288,15 +289,15 @@ export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
         const intLength = Math.pow(2, intInfo);
         stroffset = 2 + intLength;
         if (intLength < 3) {
-          length = readUInt(buffer.slice(offset + 2, offset + 2 + intLength));
+          length = readUInt(buffer.subarray(offset + 2, offset + 2 + intLength));
         } else {
-          length = readUInt(buffer.slice(offset + 2, offset + 2 + intLength));
+          length = readUInt(buffer.subarray(offset + 2, offset + 2 + intLength));
         }
       }
       // length is String length -> to get byte length multiply by 2, as 1 character takes 2 bytes in UTF-16
       length *= (isUtf16 + 1);
       if (length < maxObjectSize) {
-        let plistString = Buffer.from(buffer.slice(offset + stroffset, offset + stroffset + length));
+        let plistString = Buffer.from(buffer.subarray(offset + stroffset, offset + stroffset + length));
         if (isUtf16) {
           plistString = swapBytes(plistString);
           enc = "ucs2";
@@ -319,9 +320,9 @@ export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
         const intLength = Math.pow(2, intInfo);
         arrayoffset = 2 + intLength;
         if (intLength < 3) {
-          length = readUInt(buffer.slice(offset + 2, offset + 2 + intLength));
+          length = readUInt(buffer.subarray(offset + 2, offset + 2 + intLength));
         } else {
-          length = readUInt(buffer.slice(offset + 2, offset + 2 + intLength));
+          length = readUInt(buffer.subarray(offset + 2, offset + 2 + intLength));
         }
       }
       if (length * objectRefSize > maxObjectSize) {
@@ -329,7 +330,7 @@ export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
       }
       const array: ArrayProperty<T> = [];
       for (let i = 0; i < length; i++) {
-        const objRef = readUInt(buffer.slice(offset + arrayoffset + i * objectRefSize, offset + arrayoffset + (i + 1) * objectRefSize));
+        const objRef = readUInt(buffer.subarray(offset + arrayoffset + i * objectRefSize, offset + arrayoffset + (i + 1) * objectRefSize));
         array[i] = parseObject(objRef);
       }
       return array;
@@ -348,9 +349,9 @@ export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
         const intLength = Math.pow(2, intInfo);
         dictoffset = 2 + intLength;
         if (intLength < 3) {
-          length = readUInt(buffer.slice(offset + 2, offset + 2 + intLength));
+          length = readUInt(buffer.subarray(offset + 2, offset + 2 + intLength));
         } else {
-          length = readUInt(buffer.slice(offset + 2, offset + 2 + intLength));
+          length = readUInt(buffer.subarray(offset + 2, offset + 2 + intLength));
         }
       }
       if (length * 2 * objectRefSize > maxObjectSize) {
@@ -361,9 +362,12 @@ export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
       }
       const dict: DictionaryProperty = {};
       for (let i = 0; i < length; i++) {
-        const keyRef = readUInt(buffer.slice(offset + dictoffset + i * objectRefSize, offset + dictoffset + (i + 1) * objectRefSize));
-        const valRef = readUInt(buffer.slice(offset + dictoffset + (length * objectRefSize) + i * objectRefSize, offset + dictoffset + (length * objectRefSize) + (i + 1) * objectRefSize));
+        const keyRef = readUInt(buffer.subarray(offset + dictoffset + i * objectRefSize, offset + dictoffset + (i + 1) * objectRefSize));
+        const valRef = readUInt(buffer.subarray(offset + dictoffset + (length * objectRefSize) + i * objectRefSize, offset + dictoffset + (length * objectRefSize) + (i + 1) * objectRefSize));
         const key = parseObject(keyRef);
+        if (typeof key !== "string") {
+          throw new Error("Parsed unexpected property key type, should be a string.");
+        }
         const val = parseObject(valRef);
         if (debug) {
           console.log("  DICT #" + tableOffset + ": Mapped " + key + " to " + val);
@@ -390,8 +394,8 @@ function readUInt(buffer: Buffer, start?: number): number {
 
 // we're just going to toss the high order bits because javascript doesn't have 64-bit ints
 function readUInt64BE(buffer: Buffer, start: number): number {
-  const data = buffer.slice(start, start + 8);
-  return data.readUInt32BE(4, 8);
+  const data = buffer.subarray(start, start + 8);
+  return data.readUInt32BE(4);
 }
 
 function swapBytes<T extends Buffer>(buffer: T): T {
