@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 'use strict';
 
 // tests are adapted from https://github.com/TooTallNate/node-plist
@@ -14,10 +12,11 @@ const dirname = path.dirname(fileURLToPath(new URL(import.meta.url)));
 describe('bplist-parser', function () {
   it('iTunes Small', async function () {
     const file = path.join(dirname, "iTunes-small.bplist");
-    const startTime1 = new Date();
+    const startTime1 = new Date().getTime();
 
-    const [dict] = await bplist.parseFile(file);
-    const endTime = new Date();
+    /** @type {any} */
+    const dict = (await bplist.parseFile(file))[0];
+    const endTime = new Date().getTime();
     console.log('Parsed "' + file + '" in ' + (endTime - startTime1) + 'ms');
     assert.equal(dict['Application Version'], "9.0.3");
     assert.equal(dict['Library Persistent ID'], "6F81D37F95101437");
@@ -26,10 +25,11 @@ describe('bplist-parser', function () {
 
   it('sample1', async function () {
     const file = path.join(dirname, "sample1.bplist");
-    const startTime = new Date();
+    const startTime = new Date().getTime();
 
-    const [dict] = await bplist.parseFile(file);
-    const endTime = new Date();
+    /** @type {any} */
+    const dict = (await bplist.parseFile(file))[0];
+    const endTime = new Date().getTime();
     console.log('Parsed "' + file + '" in ' + (endTime - startTime) + 'ms');
 
     assert.equal(dict['CFBundleIdentifier'], 'com.apple.dictionary.MySample');
@@ -38,10 +38,11 @@ describe('bplist-parser', function () {
 
   it('sample2', async function () {
     const file = path.join(dirname, "sample2.bplist");
-    const startTime = new Date();
+    const startTime = new Date().getTime();
 
-    const [dict] = await bplist.parseFile(file);
-    const endTime = new Date();
+    /** @type {any} */
+    const dict = (await bplist.parseFile(file))[0];
+    const endTime = new Date().getTime();
     console.log('Parsed "' + file + '" in ' + (endTime - startTime) + 'ms');
 
     assert.equal(dict['PopupMenu'][2]['Key'], "\n        #import <Cocoa/Cocoa.h>\n\n#import <MacRuby/MacRuby.h>\n\nint main(int argc, char *argv[])\n{\n  return macruby_main(\"rb_main.rb\", argc, argv);\n}\n");
@@ -50,10 +51,11 @@ describe('bplist-parser', function () {
 
   it('airplay', async function () {
     const file = path.join(dirname, "airplay.bplist");
-    const startTime = new Date();
+    const startTime = new Date().getTime();
 
-    const [dict] = await bplist.parseFile(file);
-    const endTime = new Date();
+    /** @type {any} */
+    const dict = (await bplist.parseFile(file))[0];
+    const endTime = new Date().getTime();
     console.log('Parsed "' + file + '" in ' + (endTime - startTime) + 'ms');
 
     assert.equal(dict['duration'], 5555.0495000000001);
@@ -63,10 +65,11 @@ describe('bplist-parser', function () {
 
   it('utf16', async function () {
     const file = path.join(dirname, "utf16.bplist");
-    const startTime = new Date();
+    const startTime = new Date().getTime();
 
-    const [dict] = await bplist.parseFile(file);
-    const endTime = new Date();
+    /** @type {any} */
+    const dict = (await bplist.parseFile(file))[0];
+    const endTime = new Date().getTime();
     console.log('Parsed "' + file + '" in ' + (endTime - startTime) + 'ms');
 
     assert.equal(dict['CFBundleName'], 'sellStuff');
@@ -77,10 +80,11 @@ describe('bplist-parser', function () {
 
   it('utf16chinese', async function () {
     const file = path.join(dirname, "utf16_chinese.plist");
-    const startTime = new Date();
+    const startTime = new Date().getTime();
 
-    const [dict] = await bplist.parseFile(file);
-    const endTime = new Date();
+    /** @type {any} */
+    const dict = (await bplist.parseFile(file))[0];
+    const endTime = new Date().getTime();
     console.log('Parsed "' + file + '" in ' + (endTime - startTime) + 'ms');
 
     assert.equal(dict['CFBundleName'], '天翼阅读');
@@ -90,10 +94,11 @@ describe('bplist-parser', function () {
 
   it('uid', async function () {
     const file = path.join(dirname, "uid.bplist");
-    const startTime = new Date();
+    const startTime = new Date().getTime();
 
-    const [dict] = await bplist.parseFile(file);
-    const endTime = new Date();
+    /** @type {any} */
+    const dict = (await bplist.parseFile(file))[0];
+    const endTime = new Date().getTime();
     console.log('Parsed "' + file + '" in ' + (endTime - startTime) + 'ms');
 
     assert.deepEqual(dict['$objects'][1]['NS.keys'], [{UID:2}, {UID:3}, {UID:4}]);
@@ -104,10 +109,11 @@ describe('bplist-parser', function () {
 
   it('int64', async function () {
     const file = path.join(dirname, "int64.bplist");
-    const startTime = new Date();
+    const startTime = new Date().getTime();
 
-    const [dict] = await bplist.parseFile(file);
-    const endTime = new Date();
+    /** @type {any} */
+    const dict = (await bplist.parseFile(file))[0];
+    const endTime = new Date().getTime();
     console.log('Parsed "' + file + '" in ' + (endTime - startTime) + 'ms');
 
     assert.equal(dict['zero'], '0');
