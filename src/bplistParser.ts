@@ -1,7 +1,7 @@
 import { readFile, readFileSync } from 'node:fs';
 const debug = false;
 
-export type Property = SimpleProperty | IntegerProperty | UIDProperty | RealProperty | DateProperty | StringProperty | ArrayProperty<Property> | DictionaryProperty;
+export type Property = SimpleProperty | IntegerProperty | UIDProperty | RealProperty | DateProperty | DataProperty | StringProperty | ArrayProperty<Property> | DictionaryProperty;
 
 export type SimpleProperty = boolean | null;
 
@@ -129,41 +129,32 @@ export function parseBuffer<T extends Property>(buffer: Uint8Array): [T] {
   // For the format specification check
   // <a href="https://www.opensource.apple.com/source/CF/CF-635/CFBinaryPList.c">
   // Apple's binary property list parser implementation</a>.
-  function parseObject<T extends Property>(tableOffset: number): T {
+  function parseObject<T extends Property>(tableOffset: number): T;
+  function parseObject(tableOffset: number): Property {
     const offset: number = offsetTable[tableOffset]!;
     const type: number = buffer[offset]!;
     const objType = (type & 0xF0) >> 4; //First  4 bits
     const objInfo = (type & 0x0F);      //Second 4 bits
     switch (objType) {
     case 0x0:
-      // @ts-expect-error
       return parseSimple();
     case 0x1:
-      // @ts-expect-error
       return parseInteger();
     case 0x8:
-      // @ts-expect-error
       return parseUID();
     case 0x2:
-      // @ts-expect-error
       return parseReal();
     case 0x3:
-      // @ts-expect-error
       return parseDate();
     case 0x4:
-      // @ts-expect-error
       return parseData();
     case 0x5: // ASCII
-    // @ts-expect-error
       return parsePlistString();
     case 0x6: // UTF-16
-    // @ts-expect-error
       return parsePlistString(true);
     case 0xA:
-      // @ts-expect-error
       return parseArray();
     case 0xD:
-      // @ts-expect-error
       return parseDictionary();
     default:
       throw new Error("Unhandled type 0x" + objType.toString(16));
@@ -276,11 +267,8 @@ export function parseBuffer<T extends Property>(buffer: Uint8Array): [T] {
       throw new Error("Too little heap space available! Wanted to read " + length + " bytes, but only " + maxObjectSize + " are available.");
     }
 
-    /**
-     * @param isUtf16 This is really a boolean, but the usage needs some help.
-     */
-    function parsePlistString (isUtf16?: number): StringProperty {
-      isUtf16 = isUtf16 || 0;
+    function parsePlistString (isUtf16: boolean = false): StringProperty {
+      const charLength: number = isUtf16 ? 1 : 0;
       let enc: BufferEncoding = "utf8";
       let length = objInfo;
       let stroffset = 1;
@@ -300,10 +288,10 @@ export function parseBuffer<T extends Property>(buffer: Uint8Array): [T] {
         }
       }
       // length is String length -> to get byte length multiply by 2, as 1 character takes 2 bytes in UTF-16
-      length *= (isUtf16 + 1);
+      length *= (charLength + 1);
       if (length < maxObjectSize) {
         let plistString = Buffer.from(buffer.subarray(offset + stroffset, offset + stroffset + length));
-        if (isUtf16) {
+        if (charLength) {
           plistString = swapBytes(plistString);
           enc = "utf-16le";
         }
