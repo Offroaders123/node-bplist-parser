@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 'use strict';
 
 // tests are adapted from https://github.com/TooTallNate/node-plist

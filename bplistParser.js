@@ -16,14 +16,29 @@ export var maxObjectCount = 32768;
 const EPOCH = 978307200000;
 
 // UID object definition
+/**
+ * @param {number} id
+ */
 export const UID = function(id) {
   this.UID = id;
 };
 
+/**
+ * @template {import('./property.d.ts').Property} T
+ * @param {string | Buffer} fileNameOrBuffer
+ * @param {(error: Error | null, result?: [T]) => void} [callback]
+ * @returns {Promise<[T]>}
+ */
 export const parseFile = function (fileNameOrBuffer, callback) {
   return new Promise(function (resolve, reject) {
+    /**
+     * @param {Buffer} buffer
+     * @returns {void}
+     */
     function tryParseBuffer(buffer) {
+      /** @type {Error | null} */
       let err = null;
+      /** @type {[T]} */
       let result;
       try {
         result = parseBuffer(buffer);
@@ -49,6 +64,11 @@ export const parseFile = function (fileNameOrBuffer, callback) {
   });
 };
 
+/**
+ * @template {import('./property.d.ts').Property} T
+ * @param {string | Buffer} fileNameOrBuffer
+ * @returns {[T]}
+ */
 export const parseFileSync = function (fileNameOrBuffer) {
   if (!Buffer.isBuffer(fileNameOrBuffer)) {
     fileNameOrBuffer = fs.readFileSync(fileNameOrBuffer);
@@ -56,6 +76,11 @@ export const parseFileSync = function (fileNameOrBuffer) {
   return parseBuffer(fileNameOrBuffer);
 };
 
+/**
+ * @template {import('./property.d.ts').Property} T
+ * @param {Buffer} buffer
+ * @returns {[T]}
+ */
 export const parseBuffer = function (buffer) {
   // check header
   const header = buffer.slice(0, 'bplist'.length).toString('utf8');
@@ -92,6 +117,7 @@ export const parseBuffer = function (buffer) {
   }
 
   // Handle offset table
+  /** @type {number[]} */
   const offsetTable = [];
 
   for (let i = 0; i < numObjects; i++) {
@@ -106,6 +132,11 @@ export const parseBuffer = function (buffer) {
   // For the format specification check
   // <a href="https://www.opensource.apple.com/source/CF/CF-635/CFBinaryPList.c">
   // Apple's binary property list parser implementation</a>.
+  /**
+   * @template {import('./property.d.ts').Property} T
+   * @param {number} tableOffset
+   * @returns {T}
+   */
   function parseObject(tableOffset) {
     const offset = offsetTable[tableOffset];
     const type = buffer[offset];
@@ -113,29 +144,42 @@ export const parseBuffer = function (buffer) {
     const objInfo = (type & 0x0F);      //Second 4 bits
     switch (objType) {
     case 0x0:
+      // @ts-expect-error
       return parseSimple();
     case 0x1:
+      // @ts-expect-error
       return parseInteger();
     case 0x8:
+      // @ts-expect-error
       return parseUID();
     case 0x2:
+      // @ts-expect-error
       return parseReal();
     case 0x3:
+      // @ts-expect-error
       return parseDate();
     case 0x4:
+      // @ts-expect-error
       return parseData();
     case 0x5: // ASCII
+    // @ts-expect-error
       return parsePlistString();
     case 0x6: // UTF-16
+    // @ts-expect-error
       return parsePlistString(true);
     case 0xA:
+      // @ts-expect-error
       return parseArray();
     case 0xD:
+      // @ts-expect-error
       return parseDictionary();
     default:
       throw new Error("Unhandled type 0x" + objType.toString(16));
     }
 
+    /**
+     * @returns {boolean}
+     */
     function parseSimple() {
       //Simple
       switch (objInfo) {
@@ -152,6 +196,10 @@ export const parseBuffer = function (buffer) {
       }
     }
 
+    /**
+     * @param {Buffer} buffer
+     * @returns {string}
+     */
     function bufferToHexString(buffer) {
       let str = '';
       let i;
@@ -167,6 +215,9 @@ export const parseBuffer = function (buffer) {
       return str;
     }
 
+    /**
+     * @returns {number | bigint}
+     */
     function parseInteger() {
       const length = Math.pow(2, objInfo);
       if (length < maxObjectSize) {
@@ -185,6 +236,9 @@ export const parseBuffer = function (buffer) {
 
     }
 
+    /**
+     * @returns {UID}
+     */
     function parseUID() {
       const length = objInfo + 1;
       if (length < maxObjectSize) {
@@ -193,6 +247,9 @@ export const parseBuffer = function (buffer) {
       throw new Error("Too little heap space available! Wanted to read " + length + " bytes, but only " + maxObjectSize + " are available.");
     }
 
+    /**
+     * @returns {number}
+     */
     function parseReal() {
       const length = Math.pow(2, objInfo);
       if (length < maxObjectSize) {
@@ -208,6 +265,9 @@ export const parseBuffer = function (buffer) {
       }
     }
 
+    /**
+     * @returns {Date}
+     */
     function parseDate() {
       if (objInfo != 0x3) {
         console.error("Unknown date type :" + objInfo + ". Parsing anyway...");
@@ -216,6 +276,9 @@ export const parseBuffer = function (buffer) {
       return new Date(EPOCH + (1000 * dateBuffer.readDoubleBE(0)));
     }
 
+    /**
+     * @returns {Buffer}
+     */
     function parseData() {
       let dataoffset = 1;
       let length = objInfo;
@@ -240,8 +303,13 @@ export const parseBuffer = function (buffer) {
       throw new Error("Too little heap space available! Wanted to read " + length + " bytes, but only " + maxObjectSize + " are available.");
     }
 
+    /**
+     * @param {number} [isUtf16] This is really a boolean, but the usage needs some help.
+     * @returns {string}
+     */
     function parsePlistString (isUtf16) {
       isUtf16 = isUtf16 || 0;
+      /** @type {BufferEncoding} */
       let enc = "utf8";
       let length = objInfo;
       let stroffset = 1;
@@ -273,6 +341,10 @@ export const parseBuffer = function (buffer) {
       throw new Error("Too little heap space available! Wanted to read " + length + " bytes, but only " + maxObjectSize + " are available.");
     }
 
+    /**
+     * @template {import('./property.d.ts').Property} T
+     * @returns {import('./property.d.ts').ArrayProperty<T>}
+     */
     function parseArray() {
       let length = objInfo;
       let arrayoffset = 1;
@@ -294,6 +366,7 @@ export const parseBuffer = function (buffer) {
       if (length * objectRefSize > maxObjectSize) {
         throw new Error("Too little heap space available!");
       }
+      /** @type {import('./property.d.ts').ArrayProperty<T>} */
       const array = [];
       for (let i = 0; i < length; i++) {
         const objRef = readUInt(buffer.slice(offset + arrayoffset + i * objectRefSize, offset + arrayoffset + (i + 1) * objectRefSize));
@@ -302,6 +375,7 @@ export const parseBuffer = function (buffer) {
       return array;
     }
 
+    /** @returns {import('./property.d.ts').DictionaryProperty} */
     function parseDictionary() {
       let length = objInfo;
       let dictoffset = 1;
@@ -326,6 +400,7 @@ export const parseBuffer = function (buffer) {
       if (debug) {
         console.log("Parsing dictionary #" + tableOffset);
       }
+      /** @type {import('./property.d.ts').DictionaryProperty} */
       const dict = {};
       for (let i = 0; i < length; i++) {
         const keyRef = readUInt(buffer.slice(offset + dictoffset + i * objectRefSize, offset + dictoffset + (i + 1) * objectRefSize));
@@ -344,6 +419,11 @@ export const parseBuffer = function (buffer) {
   return [ parseObject(topObject) ];
 };
 
+/**
+ * @param {Buffer} buffer
+ * @param {number} [start]
+ * @returns {number}
+ */
 function readUInt(buffer, start) {
   start = start || 0;
 
@@ -356,11 +436,21 @@ function readUInt(buffer, start) {
 }
 
 // we're just going to toss the high order bits because javascript doesn't have 64-bit ints
+/**
+ * @param {Buffer} buffer
+ * @param {number} start
+ * @returns {number}
+ */
 function readUInt64BE(buffer, start) {
   const data = buffer.slice(start, start + 8);
   return data.readUInt32BE(4, 8);
 }
 
+/**
+ * @template {Buffer} T
+ * @param {T} buffer
+ * @returns {T}
+ */
 function swapBytes(buffer) {
   const len = buffer.length;
   for (let i = 0; i < len; i += 2) {
