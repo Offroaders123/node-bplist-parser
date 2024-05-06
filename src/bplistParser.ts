@@ -13,7 +13,7 @@ export type RealProperty = number;
 
 export type DateProperty = Date;
 
-export type DataProperty = Buffer;
+export type DataProperty = Uint8Array;
 
 export type StringProperty = string;
 
@@ -31,6 +31,8 @@ export const maxObjectCount = 32768;
 // So we just hardcode the correct value.
 const EPOCH = 978307200000;
 
+const textDecoder = new TextDecoder();
+
 // UID object definition
 export class UID {
   public readonly UID: number;
@@ -40,9 +42,9 @@ export class UID {
   }
 }
 
-export function parseFile<T extends Property>(fileNameOrBuffer: string | Buffer, callback?: (error: Error | null, result?: [T]) => void): Promise<[T]> {
+export function parseFile<T extends Property>(fileNameOrBuffer: string | Uint8Array, callback?: (error: Error | null, result?: [T]) => void): Promise<[T]> {
   return new Promise((resolve, reject) => {
-    function tryParseBuffer(buffer: Buffer): void {
+    function tryParseBuffer(buffer: Uint8Array): void {
       let err: Error | null = null;
       let result: [T] | undefined;
       try {
@@ -56,7 +58,7 @@ export function parseFile<T extends Property>(fileNameOrBuffer: string | Buffer,
       }
     }
 
-    if (Buffer.isBuffer(fileNameOrBuffer)) {
+    if (typeof fileNameOrBuffer !== "string") {
       return tryParseBuffer(fileNameOrBuffer);
     }
     readFile(fileNameOrBuffer, (err, data) => {
@@ -69,28 +71,29 @@ export function parseFile<T extends Property>(fileNameOrBuffer: string | Buffer,
   });
 }
 
-export function parseFileSync<T extends Property>(fileNameOrBuffer: string | Buffer): [T] {
-  if (!Buffer.isBuffer(fileNameOrBuffer)) {
+export function parseFileSync<T extends Property>(fileNameOrBuffer: string | Uint8Array): [T] {
+  if (typeof fileNameOrBuffer === "string") {
     fileNameOrBuffer = readFileSync(fileNameOrBuffer);
   }
   return parseBuffer(fileNameOrBuffer);
 }
 
-export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
+export function parseBuffer<T extends Property>(buffer: Uint8Array): [T] {
   // check header
-  const header = buffer.subarray(0, 'bplist'.length).toString('utf8');
+  const header: string = textDecoder.decode(buffer.subarray(0, 'bplist'.length));
   if (header !== 'bplist') {
     throw new Error("Invalid binary plist. Expected 'bplist' at offset 0.");
   }
 
   // Handle trailer, last 32 bytes of the file
   const trailer = buffer.subarray(buffer.length - 32, buffer.length);
+  const trailerView = new DataView(trailer.buffer, trailer.byteOffset, trailer.byteLength);
   // 6 null bytes (index 0 to 5)
-  const offsetSize = trailer.readUInt8(6);
+  const offsetSize = trailerView.getUint8(6);
   if (debug) {
     console.log("offsetSize: " + offsetSize);
   }
-  const objectRefSize = trailer.readUInt8(7);
+  const objectRefSize = trailerView.getUint8(7);
   if (debug) {
     console.log("objectRefSize: " + objectRefSize);
   }
@@ -182,7 +185,7 @@ export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
       }
     }
 
-    function bufferToHexString(buffer: Buffer): string {
+    function bufferToHexString(buffer: Uint8Array): string {
       let str = '';
       let i: number;
       for (i = 0; i < buffer.length; i++) {
@@ -227,11 +230,12 @@ export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
       const length = Math.pow(2, objInfo);
       if (length < maxObjectSize) {
         const realBuffer = buffer.subarray(offset + 1, offset + 1 + length);
+        const realBufferView = new DataView(realBuffer.buffer, realBuffer.byteOffset, realBuffer.byteLength);
         if (length === 4) {
-          return realBuffer.readFloatBE(0);
+          return realBufferView.getFloat32(0, false);
         }
         if (length === 8) {
-          return realBuffer.readDoubleBE(0);
+          return realBufferView.getFloat64(0, false);
         }
         throw new Error(`Length for 'real' value should be '4' or '8', received ${length}`); // not sure if this can really happen
       } else {
@@ -244,7 +248,8 @@ export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
         console.error("Unknown date type :" + objInfo + ". Parsing anyway...");
       }
       const dateBuffer = buffer.subarray(offset + 1, offset + 9);
-      return new Date(EPOCH + (1000 * dateBuffer.readDoubleBE(0)));
+      const dateBufferView = new DataView(dateBuffer.buffer, dateBuffer.byteOffset, dateBuffer.byteLength);
+      return new Date(EPOCH + (1000 * dateBufferView.getFloat64(0, false)));
     }
 
     function parseData(): DataProperty {
@@ -300,7 +305,7 @@ export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
         let plistString = Buffer.from(buffer.subarray(offset + stroffset, offset + stroffset + length));
         if (isUtf16) {
           plistString = swapBytes(plistString);
-          enc = "ucs2";
+          enc = "utf-16le";
         }
         return plistString.toString(enc);
       }
@@ -381,7 +386,7 @@ export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
   return [ parseObject(topObject) ];
 }
 
-function readUInt(buffer: Buffer, start?: number): number {
+function readUInt(buffer: Uint8Array, start?: number): number {
   start = start || 0;
 
   let l = 0;
@@ -393,12 +398,13 @@ function readUInt(buffer: Buffer, start?: number): number {
 }
 
 // we're just going to toss the high order bits because javascript doesn't have 64-bit ints
-function readUInt64BE(buffer: Buffer, start: number): number {
+function readUInt64BE(buffer: Uint8Array, start: number): number {
   const data = buffer.subarray(start, start + 8);
-  return data.readUInt32BE(4);
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  return view.getUint32(4, false);
 }
 
-function swapBytes<T extends Buffer>(buffer: T): T {
+function swapBytes<T extends Uint8Array>(buffer: T): T {
   const len = buffer.length;
   for (let i = 0; i < len; i += 2) {
     const a: number = buffer[i]!;
