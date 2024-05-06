@@ -1,10 +1,4 @@
-/* eslint-disable no-console */
-
-'use strict';
-
-// adapted from https://github.com/3breadt/dd-plist
-
-import fs from 'fs';
+import { readFile, readFileSync } from 'node:fs';
 const debug = false;
 
 export type Property = SimpleProperty | IntegerProperty | UIDProperty | RealProperty | DateProperty | StringProperty | ArrayProperty<Property> | DictionaryProperty;
@@ -29,8 +23,8 @@ export interface DictionaryProperty {
   [key: string]: Property;
 }
 
-export var maxObjectSize = 100 * 1000 * 1000; // 100Meg
-export var maxObjectCount = 32768;
+export const maxObjectSize = 100 ** 8; // 100Meg
+export const maxObjectCount = 32768;
 
 // EPOCH = new SimpleDateFormat("yyyy MM dd zzz").parse("2001 01 01 GMT").getTime();
 // ...but that's annoying in a static initializer because it can throw exceptions, ick.
@@ -65,7 +59,7 @@ export function parseFile<T extends Property>(fileNameOrBuffer: string | Buffer,
     if (Buffer.isBuffer(fileNameOrBuffer)) {
       return tryParseBuffer(fileNameOrBuffer);
     }
-    fs.readFile(fileNameOrBuffer, (err, data) => {
+    readFile(fileNameOrBuffer, (err, data) => {
       if (err) {
         reject(err);
         return callback(err);
@@ -77,7 +71,7 @@ export function parseFile<T extends Property>(fileNameOrBuffer: string | Buffer,
 
 export function parseFileSync<T extends Property>(fileNameOrBuffer: string | Buffer): [T] {
   if (!Buffer.isBuffer(fileNameOrBuffer)) {
-    fileNameOrBuffer = fs.readFileSync(fileNameOrBuffer);
+    fileNameOrBuffer = readFileSync(fileNameOrBuffer);
   }
   return parseBuffer(fileNameOrBuffer);
 }
@@ -190,7 +184,7 @@ export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
 
     function bufferToHexString(buffer: Buffer): string {
       let str = '';
-      let i;
+      let i: number;
       for (i = 0; i < buffer.length; i++) {
         if (buffer[i] != 0x00) {
           break;

@@ -2,6 +2,8 @@
 
 Binary Mac OS X Plist (property list) parser.
 
+Adapted from https://github.com/3breadt/dd-plist.
+
 ## Installation
 
 ```bash
