@@ -1,5 +1,10 @@
-/build/*
-node_modules
+.DS_Store
+._*
+Desktop.ini
+Thumbs.db
+
+/dist
+/node_modules
 *.node
 *.sh
 *.swp

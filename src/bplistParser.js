@@ -24,7 +24,7 @@ export const UID = function(id) {
 };
 
 /**
- * @template {import('./property.d.ts').Property} T
+ * @template {import('./property.js').Property} T
  * @param {string | Buffer} fileNameOrBuffer
  * @param {(error: Error | null, result?: [T]) => void} [callback]
  * @returns {Promise<[T]>}
@@ -65,7 +65,7 @@ export const parseFile = function (fileNameOrBuffer, callback) {
 };
 
 /**
- * @template {import('./property.d.ts').Property} T
+ * @template {import('./property.js').Property} T
  * @param {string | Buffer} fileNameOrBuffer
  * @returns {[T]}
  */
@@ -77,7 +77,7 @@ export const parseFileSync = function (fileNameOrBuffer) {
 };
 
 /**
- * @template {import('./property.d.ts').Property} T
+ * @template {import('./property.js').Property} T
  * @param {Buffer} buffer
  * @returns {[T]}
  */
@@ -133,7 +133,7 @@ export const parseBuffer = function (buffer) {
   // <a href="https://www.opensource.apple.com/source/CF/CF-635/CFBinaryPList.c">
   // Apple's binary property list parser implementation</a>.
   /**
-   * @template {import('./property.d.ts').Property} T
+   * @template {import('./property.js').Property} T
    * @param {number} tableOffset
    * @returns {T}
    */
@@ -342,8 +342,8 @@ export const parseBuffer = function (buffer) {
     }
 
     /**
-     * @template {import('./property.d.ts').Property} T
-     * @returns {import('./property.d.ts').ArrayProperty<T>}
+     * @template {import('./property.js').Property} T
+     * @returns {import('./property.js').ArrayProperty<T>}
      */
     function parseArray() {
       let length = objInfo;
@@ -366,7 +366,7 @@ export const parseBuffer = function (buffer) {
       if (length * objectRefSize > maxObjectSize) {
         throw new Error("Too little heap space available!");
       }
-      /** @type {import('./property.d.ts').ArrayProperty<T>} */
+      /** @type {import('./property.js').ArrayProperty<T>} */
       const array = [];
       for (let i = 0; i < length; i++) {
         const objRef = readUInt(buffer.slice(offset + arrayoffset + i * objectRefSize, offset + arrayoffset + (i + 1) * objectRefSize));
@@ -375,7 +375,7 @@ export const parseBuffer = function (buffer) {
       return array;
     }
 
-    /** @returns {import('./property.d.ts').DictionaryProperty} */
+    /** @returns {import('./property.js').DictionaryProperty} */
     function parseDictionary() {
       let length = objInfo;
       let dictoffset = 1;
@@ -400,7 +400,7 @@ export const parseBuffer = function (buffer) {
       if (debug) {
         console.log("Parsing dictionary #" + tableOffset);
       }
-      /** @type {import('./property.d.ts').DictionaryProperty} */
+      /** @type {import('./property.js').DictionaryProperty} */
       const dict = {};
       for (let i = 0; i < length; i++) {
         const keyRef = readUInt(buffer.slice(offset + dictoffset + i * objectRefSize, offset + dictoffset + (i + 1) * objectRefSize));

@@ -7,7 +7,7 @@
 import assert from 'assert';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import * as bplist from '../bplistParser.js';
+import * as bplist from '../dist/bplistParser.js';
 
 const dirname = path.dirname(fileURLToPath(new URL(import.meta.url)));
 

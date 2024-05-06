@@ -2,9 +2,12 @@
   "name": "bplist-parser",
   "version": "0.3.2",
   "description": "Binary plist parser.",
-  "main": "bplistParser.js",
+  "main": "./dist/bplistParser.js",
+  "types": "./dist/bplistParser.d.js",
   "type": "module",
   "scripts": {
+    "build": "tsc --project ./tsconfig.build.json",
+    "dev": "tsc --watch",
     "test": "mocha test"
   },
   "keywords": [
