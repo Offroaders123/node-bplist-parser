@@ -46,8 +46,8 @@ export class UID {
   }
 }
 
-export const parseFile = function <T extends Property>(fileNameOrBuffer: string | Buffer, callback?: (error: Error | null, result?: [T]) => void): Promise<[T]> {
-  return new Promise(function (resolve, reject) {
+export function parseFile<T extends Property>(fileNameOrBuffer: string | Buffer, callback?: (error: Error | null, result?: [T]) => void): Promise<[T]> {
+  return new Promise((resolve, reject) => {
     function tryParseBuffer(buffer: Buffer): void {
       let err: Error | null = null;
       let result: [T];
@@ -65,7 +65,7 @@ export const parseFile = function <T extends Property>(fileNameOrBuffer: string 
     if (Buffer.isBuffer(fileNameOrBuffer)) {
       return tryParseBuffer(fileNameOrBuffer);
     }
-    fs.readFile(fileNameOrBuffer, function (err, data) {
+    fs.readFile(fileNameOrBuffer, (err, data) => {
       if (err) {
         reject(err);
         return callback(err);
@@ -73,16 +73,16 @@ export const parseFile = function <T extends Property>(fileNameOrBuffer: string 
       tryParseBuffer(data);
     });
   });
-};
+}
 
-export const parseFileSync = function <T extends Property>(fileNameOrBuffer: string | Buffer): [T] {
+export function parseFileSync<T extends Property>(fileNameOrBuffer: string | Buffer): [T] {
   if (!Buffer.isBuffer(fileNameOrBuffer)) {
     fileNameOrBuffer = fs.readFileSync(fileNameOrBuffer);
   }
   return parseBuffer(fileNameOrBuffer);
-};
+}
 
-export const parseBuffer = function <T extends Property>(buffer: Buffer): [T] {
+export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
   // check header
   const header = buffer.slice(0, 'bplist'.length).toString('utf8');
   if (header !== 'bplist') {
@@ -381,7 +381,7 @@ export const parseBuffer = function <T extends Property>(buffer: Buffer): [T] {
   }
 
   return [ parseObject(topObject) ];
-};
+}
 
 function readUInt(buffer: Buffer, start?: number): number {
   start = start || 0;
