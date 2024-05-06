@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsc --project ./tsconfig.build.json",
     "dev": "tsc --watch",
-    "test": "node --test ./test/parseTest.js"
+    "test": "tsx --test ./test/parseTest.test.ts"
   },
   "keywords": [
     "bplist",
@@ -23,6 +23,7 @@
   "devDependencies": {
     "@types/node": "^20.12.8",
     "eslint": "6.5.x",
+    "tsx": "^4.9.3",
     "typescript": "^5.4.5"
   },
   "homepage": "https://github.com/nearinfinity/node-bplist-parser",
