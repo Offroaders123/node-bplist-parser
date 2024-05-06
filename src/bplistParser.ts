@@ -7,6 +7,28 @@
 import fs from 'fs';
 const debug = false;
 
+export type Property = SimpleProperty | IntegerProperty | UIDProperty | RealProperty | DateProperty | StringProperty | ArrayProperty<Property> | DictionaryProperty;
+
+export type SimpleProperty = boolean;
+
+export type IntegerProperty = number | bigint;
+
+export type UIDProperty = UID;
+
+export type RealProperty = number;
+
+export type DateProperty = Date;
+
+export type DataProperty = Buffer;
+
+export type StringProperty = string;
+
+export interface ArrayProperty<T extends Property> extends Array<T> {}
+
+export interface DictionaryProperty {
+  [key: string]: Property;
+}
+
 export var maxObjectSize = 100 * 1000 * 1000; // 100Meg
 export var maxObjectCount = 32768;
 
@@ -24,7 +46,7 @@ export class UID {
   }
 }
 
-export const parseFile = function <T extends import('./property.js').Property>(fileNameOrBuffer: string | Buffer, callback?: (error: Error | null, result?: [T]) => void): Promise<[T]> {
+export const parseFile = function <T extends Property>(fileNameOrBuffer: string | Buffer, callback?: (error: Error | null, result?: [T]) => void): Promise<[T]> {
   return new Promise(function (resolve, reject) {
     function tryParseBuffer(buffer: Buffer): void {
       let err: Error | null = null;
@@ -53,14 +75,14 @@ export const parseFile = function <T extends import('./property.js').Property>(f
   });
 };
 
-export const parseFileSync = function <T extends import('./property.js').Property>(fileNameOrBuffer: string | Buffer): [T] {
+export const parseFileSync = function <T extends Property>(fileNameOrBuffer: string | Buffer): [T] {
   if (!Buffer.isBuffer(fileNameOrBuffer)) {
     fileNameOrBuffer = fs.readFileSync(fileNameOrBuffer);
   }
   return parseBuffer(fileNameOrBuffer);
 };
 
-export const parseBuffer = function <T extends import('./property.js').Property>(buffer: Buffer): [T] {
+export const parseBuffer = function <T extends Property>(buffer: Buffer): [T] {
   // check header
   const header = buffer.slice(0, 'bplist'.length).toString('utf8');
   if (header !== 'bplist') {
@@ -110,7 +132,7 @@ export const parseBuffer = function <T extends import('./property.js').Property>
   // For the format specification check
   // <a href="https://www.opensource.apple.com/source/CF/CF-635/CFBinaryPList.c">
   // Apple's binary property list parser implementation</a>.
-  function parseObject<T extends import('./property.js').Property>(tableOffset: number): T {
+  function parseObject<T extends Property>(tableOffset: number): T {
     const offset = offsetTable[tableOffset];
     const type = buffer[offset];
     const objType = (type & 0xF0) >> 4; //First  4 bits
@@ -150,7 +172,7 @@ export const parseBuffer = function <T extends import('./property.js').Property>
       throw new Error("Unhandled type 0x" + objType.toString(16));
     }
 
-    function parseSimple(): boolean {
+    function parseSimple(): SimpleProperty {
       //Simple
       switch (objInfo) {
       case 0x0: // null
@@ -181,7 +203,7 @@ export const parseBuffer = function <T extends import('./property.js').Property>
       return str;
     }
 
-    function parseInteger(): number | bigint {
+    function parseInteger(): IntegerProperty {
       const length = Math.pow(2, objInfo);
       if (length < maxObjectSize) {
         const data = buffer.slice(offset + 1, offset + 1 + length);
@@ -199,7 +221,7 @@ export const parseBuffer = function <T extends import('./property.js').Property>
 
     }
 
-    function parseUID(): UID {
+    function parseUID(): UIDProperty {
       const length = objInfo + 1;
       if (length < maxObjectSize) {
         return new UID(readUInt(buffer.slice(offset + 1, offset + 1 + length)));
@@ -207,7 +229,7 @@ export const parseBuffer = function <T extends import('./property.js').Property>
       throw new Error("Too little heap space available! Wanted to read " + length + " bytes, but only " + maxObjectSize + " are available.");
     }
 
-    function parseReal(): number {
+    function parseReal(): RealProperty {
       const length = Math.pow(2, objInfo);
       if (length < maxObjectSize) {
         const realBuffer = buffer.slice(offset + 1, offset + 1 + length);
@@ -222,7 +244,7 @@ export const parseBuffer = function <T extends import('./property.js').Property>
       }
     }
 
-    function parseDate(): Date {
+    function parseDate(): DateProperty {
       if (objInfo != 0x3) {
         console.error("Unknown date type :" + objInfo + ". Parsing anyway...");
       }
@@ -230,7 +252,7 @@ export const parseBuffer = function <T extends import('./property.js').Property>
       return new Date(EPOCH + (1000 * dateBuffer.readDoubleBE(0)));
     }
 
-    function parseData(): Buffer {
+    function parseData(): DataProperty {
       let dataoffset = 1;
       let length = objInfo;
       if (objInfo == 0xF) {
@@ -257,7 +279,7 @@ export const parseBuffer = function <T extends import('./property.js').Property>
     /**
      * @param isUtf16 This is really a boolean, but the usage needs some help.
      */
-    function parsePlistString (isUtf16?: number): string {
+    function parsePlistString (isUtf16?: number): StringProperty {
       isUtf16 = isUtf16 || 0;
       let enc: BufferEncoding = "utf8";
       let length = objInfo;
@@ -290,7 +312,7 @@ export const parseBuffer = function <T extends import('./property.js').Property>
       throw new Error("Too little heap space available! Wanted to read " + length + " bytes, but only " + maxObjectSize + " are available.");
     }
 
-    function parseArray<T extends import('./property.js').Property>(): import('./property.js').ArrayProperty<T> {
+    function parseArray<T extends Property>(): ArrayProperty<T> {
       let length = objInfo;
       let arrayoffset = 1;
       if (objInfo == 0xF) {
@@ -311,7 +333,7 @@ export const parseBuffer = function <T extends import('./property.js').Property>
       if (length * objectRefSize > maxObjectSize) {
         throw new Error("Too little heap space available!");
       }
-      const array: import('./property.js').ArrayProperty<T> = [];
+      const array: ArrayProperty<T> = [];
       for (let i = 0; i < length; i++) {
         const objRef = readUInt(buffer.slice(offset + arrayoffset + i * objectRefSize, offset + arrayoffset + (i + 1) * objectRefSize));
         array[i] = parseObject(objRef);
@@ -319,7 +341,7 @@ export const parseBuffer = function <T extends import('./property.js').Property>
       return array;
     }
 
-    function parseDictionary(): import('./property.js').DictionaryProperty {
+    function parseDictionary(): DictionaryProperty {
       let length = objInfo;
       let dictoffset = 1;
       if (objInfo == 0xF) {
@@ -343,7 +365,7 @@ export const parseBuffer = function <T extends import('./property.js').Property>
       if (debug) {
         console.log("Parsing dictionary #" + tableOffset);
       }
-      const dict: import('./property.js').DictionaryProperty = {};
+      const dict: DictionaryProperty = {};
       for (let i = 0; i < length; i++) {
         const keyRef = readUInt(buffer.slice(offset + dictoffset + i * objectRefSize, offset + dictoffset + (i + 1) * objectRefSize));
         const valRef = readUInt(buffer.slice(offset + dictoffset + (length * objectRefSize) + i * objectRefSize, offset + dictoffset + (length * objectRefSize) + (i + 1) * objectRefSize));
