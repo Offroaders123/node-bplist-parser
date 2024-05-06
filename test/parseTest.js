@@ -3,7 +3,7 @@
 import { deepEqual, strictEqual } from 'node:assert';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, it } from 'mocha';
+import { describe, it } from 'node:test';
 import { parseFile, parseFileSync } from '../dist/bplistParser.js';
 
 const __dirname = dirname(fileURLToPath(new URL(import.meta.url)));
