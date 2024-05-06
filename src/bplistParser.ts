@@ -3,7 +3,7 @@ const debug = false;
 
 export type Property = SimpleProperty | IntegerProperty | UIDProperty | RealProperty | DateProperty | StringProperty | ArrayProperty<Property> | DictionaryProperty;
 
-export type SimpleProperty = boolean;
+export type SimpleProperty = boolean | null;
 
 export type IntegerProperty = number | bigint;
 
@@ -44,7 +44,7 @@ export function parseFile<T extends Property>(fileNameOrBuffer: string | Buffer,
   return new Promise((resolve, reject) => {
     function tryParseBuffer(buffer: Buffer): void {
       let err: Error | null = null;
-      let result: [T];
+      let result: [T] | undefined;
       try {
         result = parseBuffer(buffer);
         resolve(result);
@@ -52,7 +52,7 @@ export function parseFile<T extends Property>(fileNameOrBuffer: string | Buffer,
         err = ex;
         reject(err);
       } finally {
-        if (callback) callback(err, result);
+        callback?.(err, result);
       }
     }
 
@@ -62,7 +62,7 @@ export function parseFile<T extends Property>(fileNameOrBuffer: string | Buffer,
     readFile(fileNameOrBuffer, (err, data) => {
       if (err) {
         reject(err);
-        return callback(err);
+        return callback?.(err);
       }
       tryParseBuffer(data);
     });
@@ -118,7 +118,7 @@ export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
     const offsetBytes = buffer.slice(offsetTableOffset + i * offsetSize, offsetTableOffset + (i + 1) * offsetSize);
     offsetTable[i] = readUInt(offsetBytes, 0);
     if (debug) {
-      console.log("Offset for Object #" + i + " is " + offsetTable[i] + " [" + offsetTable[i].toString(16) + "]");
+      console.log("Offset for Object #" + i + " is " + offsetTable[i] + " [" + offsetTable[i]!.toString(16) + "]");
     }
   }
 
@@ -127,8 +127,8 @@ export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
   // <a href="https://www.opensource.apple.com/source/CF/CF-635/CFBinaryPList.c">
   // Apple's binary property list parser implementation</a>.
   function parseObject<T extends Property>(tableOffset: number): T {
-    const offset = offsetTable[tableOffset];
-    const type = buffer[offset];
+    const offset: number = offsetTable[tableOffset]!;
+    const type: number = buffer[offset]!;
     const objType = (type & 0xF0) >> 4; //First  4 bits
     const objInfo = (type & 0x0F);      //Second 4 bits
     switch (objType) {
@@ -191,7 +191,7 @@ export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
         }
       }
       for (; i < buffer.length; i++) {
-        const part = '00' + buffer[i].toString(16);
+        const part = '00' + buffer[i]!.toString(16);
         str += part.substr(part.length - 2);
       }
       return str;
@@ -250,7 +250,7 @@ export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
       let dataoffset = 1;
       let length = objInfo;
       if (objInfo == 0xF) {
-        const int_type = buffer[offset + 1];
+        const int_type: number = buffer[offset + 1]!;
         const intType = (int_type & 0xF0) / 0x10;
         if (intType != 0x1) {
           console.error("0x4: UNEXPECTED LENGTH-INT TYPE! " + intType);
@@ -279,7 +279,7 @@ export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
       let length = objInfo;
       let stroffset = 1;
       if (objInfo == 0xF) {
-        const int_type = buffer[offset + 1];
+        const int_type: number = buffer[offset + 1]!;
         const intType = (int_type & 0xF0) / 0x10;
         if (intType != 0x1) {
           console.error("UNEXPECTED LENGTH-INT TYPE! " + intType);
@@ -310,7 +310,7 @@ export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
       let length = objInfo;
       let arrayoffset = 1;
       if (objInfo == 0xF) {
-        const int_type = buffer[offset + 1];
+        const int_type: number = buffer[offset + 1]!;
         const intType = (int_type & 0xF0) / 0x10;
         if (intType != 0x1) {
           console.error("0xa: UNEXPECTED LENGTH-INT TYPE! " + intType);
@@ -339,7 +339,7 @@ export function parseBuffer<T extends Property>(buffer: Buffer): [T] {
       let length = objInfo;
       let dictoffset = 1;
       if (objInfo == 0xF) {
-        const int_type = buffer[offset + 1];
+        const int_type: number = buffer[offset + 1]!;
         const intType = (int_type & 0xF0) / 0x10;
         if (intType != 0x1) {
           console.error("0xD: UNEXPECTED LENGTH-INT TYPE! " + intType);
@@ -383,7 +383,7 @@ function readUInt(buffer: Buffer, start?: number): number {
   let l = 0;
   for (let i = start; i < buffer.length; i++) {
     l <<= 8;
-    l |= buffer[i] & 0xFF;
+    l |= buffer[i]! & 0xFF;
   }
   return l;
 }
@@ -397,8 +397,8 @@ function readUInt64BE(buffer: Buffer, start: number): number {
 function swapBytes<T extends Buffer>(buffer: T): T {
   const len = buffer.length;
   for (let i = 0; i < len; i += 2) {
-    const a = buffer[i];
-    buffer[i] = buffer[i+1];
+    const a: number = buffer[i]!;
+    buffer[i] = buffer[i+1]!;
     buffer[i+1] = a;
   }
   return buffer;
