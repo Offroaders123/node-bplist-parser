@@ -269,7 +269,7 @@ export function parseBuffer<T extends Property>(buffer: Uint8Array): [T] {
 
     function parsePlistString (isUtf16: boolean = false): StringProperty {
       const charLength: number = isUtf16 ? 1 : 0;
-      let enc: BufferEncoding = "utf8";
+      let enc: TextDecoder = textDecoder;
       let length = objInfo;
       let stroffset = 1;
       if (objInfo == 0xF) {
@@ -290,12 +290,12 @@ export function parseBuffer<T extends Property>(buffer: Uint8Array): [T] {
       // length is String length -> to get byte length multiply by 2, as 1 character takes 2 bytes in UTF-16
       length *= (charLength + 1);
       if (length < maxObjectSize) {
-        let plistString = Buffer.from(buffer.subarray(offset + stroffset, offset + stroffset + length));
+        let plistString = new Uint8Array(buffer.subarray(offset + stroffset, offset + stroffset + length));
         if (charLength) {
           plistString = swapBytes(plistString);
-          enc = "utf-16le";
+          enc = new TextDecoder("utf-16le");
         }
-        return plistString.toString(enc);
+        return enc.decode(plistString);
       }
       throw new Error("Too little heap space available! Wanted to read " + length + " bytes, but only " + maxObjectSize + " are available.");
     }
