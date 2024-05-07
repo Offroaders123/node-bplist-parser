@@ -60,15 +60,15 @@ export function parseBuffer<T extends Property>(buffer: Uint8Array): T {
   if (debug) {
     console.log("objectRefSize: " + objectRefSize);
   }
-  const numObjects = readUInt64BE(trailer, 8);
+  const numObjects = Number(readUInt64BE(trailer, 8));
   if (debug) {
     console.log("numObjects: " + numObjects);
   }
-  const topObject = readUInt64BE(trailer, 16);
+  const topObject = Number(readUInt64BE(trailer, 16));
   if (debug) {
     console.log("topObject: " + topObject);
   }
-  const offsetTableOffset = readUInt64BE(trailer, 24);
+  const offsetTableOffset = Number(readUInt64BE(trailer, 24));
   if (debug) {
     console.log("offsetTableOffset: " + offsetTableOffset);
   }
@@ -349,10 +349,10 @@ function readUInt(buffer: Uint8Array, start?: number): number {
 }
 
 // we're just going to toss the high order bits because javascript doesn't have 64-bit ints
-function readUInt64BE(buffer: Uint8Array, start: number): number {
+function readUInt64BE(buffer: Uint8Array, start: number): bigint {
   const data = buffer.subarray(start, start + 8);
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
-  return view.getUint32(4, false);
+  return view.getBigUint64(0, false);
 }
 
 function swapBytes<T extends Uint8Array>(buffer: T): T {
