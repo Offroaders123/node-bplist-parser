@@ -1,7 +1,5 @@
 {
   "compilerOptions": {
-    "allowJs": true,
-    "checkJs": true,
     "module": "NodeNext",
     "target": "ESNext",
     "isolatedModules": true,
@@ -13,8 +11,5 @@
     "allowUnreachableCode": false,
     "noUnusedLocals": true,
     "noUnusedParameters": true
-  },
-  "exclude": [
-    "./dist"
-  ]
+  }
 }
