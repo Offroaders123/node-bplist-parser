@@ -219,11 +219,7 @@ export function parseBuffer<T extends Property>(buffer: Uint8Array): T {
         const intInfo = int_type & 0x0F;
         const intLength = Math.pow(2, intInfo);
         dataoffset = 2 + intLength;
-        if (intLength < 3) {
-          length = readUInt(buffer.subarray(offset + 2, offset + 2 + intLength));
-        } else {
-          length = readUInt(buffer.subarray(offset + 2, offset + 2 + intLength));
-        }
+        length = readUInt(buffer.subarray(offset + 2, offset + 2 + intLength));
       }
       if (length < maxObjectSize) {
         return buffer.subarray(offset + dataoffset, offset + dataoffset + length);
@@ -245,11 +241,7 @@ export function parseBuffer<T extends Property>(buffer: Uint8Array): T {
         const intInfo = int_type & 0x0F;
         const intLength = Math.pow(2, intInfo);
         stroffset = 2 + intLength;
-        if (intLength < 3) {
-          length = readUInt(buffer.subarray(offset + 2, offset + 2 + intLength));
-        } else {
-          length = readUInt(buffer.subarray(offset + 2, offset + 2 + intLength));
-        }
+        length = readUInt(buffer.subarray(offset + 2, offset + 2 + intLength));
       }
       // length is String length -> to get byte length multiply by 2, as 1 character takes 2 bytes in UTF-16
       length *= (charLength + 1);
@@ -275,11 +267,7 @@ export function parseBuffer<T extends Property>(buffer: Uint8Array): T {
         const intInfo = int_type & 0x0F;
         const intLength = Math.pow(2, intInfo);
         arrayoffset = 2 + intLength;
-        if (intLength < 3) {
-          length = readUInt(buffer.subarray(offset + 2, offset + 2 + intLength));
-        } else {
-          length = readUInt(buffer.subarray(offset + 2, offset + 2 + intLength));
-        }
+        length = readUInt(buffer.subarray(offset + 2, offset + 2 + intLength));
       }
       if (length * objectRefSize > maxObjectSize) {
         throw new Error("Too little heap space available!");
@@ -304,11 +292,7 @@ export function parseBuffer<T extends Property>(buffer: Uint8Array): T {
         const intInfo = int_type & 0x0F;
         const intLength = Math.pow(2, intInfo);
         dictoffset = 2 + intLength;
-        if (intLength < 3) {
-          length = readUInt(buffer.subarray(offset + 2, offset + 2 + intLength));
-        } else {
-          length = readUInt(buffer.subarray(offset + 2, offset + 2 + intLength));
-        }
+        length = readUInt(buffer.subarray(offset + 2, offset + 2 + intLength));
       }
       if (length * 2 * objectRefSize > maxObjectSize) {
         throw new Error("Too little heap space available!");
