@@ -82,7 +82,7 @@ export function parseBuffer<T extends Property>(buffer: Uint8Array): T {
 
   for (let i = 0; i < numObjects; i++) {
     const offsetBytes = buffer.subarray(offsetTableOffset + i * offsetSize, offsetTableOffset + (i + 1) * offsetSize);
-    offsetTable[i] = readUInt(offsetBytes, 0);
+    offsetTable[i] = readUInt(offsetBytes);
     if (debug) {
       console.log("Offset for Object #" + i + " is " + offsetTable[i] + " [" + offsetTable[i]!.toString(16) + "]");
     }
@@ -337,15 +337,14 @@ export function parseBuffer<T extends Property>(buffer: Uint8Array): T {
   return parseObject(topObject);
 }
 
-function readUInt(buffer: Uint8Array, start?: number): number {
-  start = start || 0;
+function readUInt(buffer: Uint8Array): number {
+  const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
 
-  let l = 0;
-  for (let i = start; i < buffer.length; i++) {
-    l <<= 8;
-    l |= buffer[i]! & 0xFF;
+  switch (buffer.byteLength) {
+    case 1: return view.getUint8(0);
+    case 2: return view.getUint16(0, false);
+    default: throw new Error(`Unexpected Uint value length, support more than '1' or '2'? Received '${buffer.byteLength}'`);
   }
-  return l;
 }
 
 // we're just going to toss the high order bits because javascript doesn't have 64-bit ints
