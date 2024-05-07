@@ -42,6 +42,8 @@ export class UID {
 }
 
 export function parseBuffer<T extends Property>(buffer: Uint8Array): T {
+  const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+
   // check header
   const header: string = textDecoder.decode(buffer.subarray(0, 'bplist'.length));
   if (header !== 'bplist') {
@@ -49,26 +51,25 @@ export function parseBuffer<T extends Property>(buffer: Uint8Array): T {
   }
 
   // Handle trailer, last 32 bytes of the file
-  const trailer = buffer.subarray(buffer.length - 32, buffer.length);
-  const trailerView = new DataView(trailer.buffer, trailer.byteOffset, trailer.byteLength);
+  const trailerOffset = buffer.byteLength - 32;
   // 6 null bytes (index 0 to 5)
-  const offsetSize = trailerView.getUint8(6);
+  const offsetSize = view.getUint8(trailerOffset + 6);
   if (debug) {
     console.log("offsetSize: " + offsetSize);
   }
-  const objectRefSize = trailerView.getUint8(7);
+  const objectRefSize = view.getUint8(trailerOffset + 7);
   if (debug) {
     console.log("objectRefSize: " + objectRefSize);
   }
-  const numObjects = Number(readUInt64BE(trailer, 8));
+  const numObjects = Number(view.getBigUint64(trailerOffset + 8, false));
   if (debug) {
     console.log("numObjects: " + numObjects);
   }
-  const topObject = Number(readUInt64BE(trailer, 16));
+  const topObject = Number(view.getBigUint64(trailerOffset + 16, false));
   if (debug) {
     console.log("topObject: " + topObject);
   }
-  const offsetTableOffset = Number(readUInt64BE(trailer, 24));
+  const offsetTableOffset = Number(view.getBigUint64(trailerOffset + 24, false));
   if (debug) {
     console.log("offsetTableOffset: " + offsetTableOffset);
   }
@@ -345,13 +346,6 @@ function readUInt(buffer: Uint8Array): number {
     case 2: return view.getUint16(0, false);
     default: throw new Error(`Unexpected Uint value length, support more than '1' or '2'? Received '${buffer.byteLength}'`);
   }
-}
-
-// we're just going to toss the high order bits because javascript doesn't have 64-bit ints
-function readUInt64BE(buffer: Uint8Array, start: number): bigint {
-  const data = buffer.subarray(start, start + 8);
-  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
-  return view.getBigUint64(0, false);
 }
 
 /**
