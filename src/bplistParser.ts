@@ -255,7 +255,7 @@ export function parseBuffer<T extends Property>(buffer: Uint8Array): T {
       if (length < maxObjectSize) {
         let plistString = new Uint8Array(buffer.subarray(offset + stroffset, offset + stroffset + length));
         if (charLength) {
-          plistString = swapBytes(plistString);
+          swapBytes(plistString);
           enc = new TextDecoder("utf-16le");
         }
         return enc.decode(plistString);
@@ -355,12 +355,14 @@ function readUInt64BE(buffer: Uint8Array, start: number): bigint {
   return view.getBigUint64(0, false);
 }
 
-function swapBytes<T extends Uint8Array>(buffer: T): T {
+/**
+ * Modifies the array itself.
+ */
+function swapBytes(buffer: Uint8Array): void {
   const len = buffer.length;
   for (let i = 0; i < len; i += 2) {
     const a: number = buffer[i]!;
     buffer[i] = buffer[i+1]!;
     buffer[i+1] = a;
   }
-  return buffer;
 }
