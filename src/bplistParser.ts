@@ -256,8 +256,7 @@ export function parseBuffer<T extends Property>(buffer: Uint8Array): T {
       if (length < maxObjectSize) {
         let plistString = new Uint8Array(buffer.subarray(offset + stroffset, offset + stroffset + length));
         if (charLength) {
-          swapBytes(plistString);
-          enc = new TextDecoder("utf-16le");
+          enc = new TextDecoder("utf-16be");
         }
         return enc.decode(plistString);
       }
@@ -345,17 +344,5 @@ function readUInt(buffer: Uint8Array): number {
     case 1: return view.getUint8(0);
     case 2: return view.getUint16(0, false);
     default: throw new Error(`Unexpected Uint value length, support more than '1' or '2'? Received '${buffer.byteLength}'`);
-  }
-}
-
-/**
- * Modifies the array itself.
- */
-function swapBytes(buffer: Uint8Array): void {
-  const len = buffer.length;
-  for (let i = 0; i < len; i += 2) {
-    const a: number = buffer[i]!;
-    buffer[i] = buffer[i+1]!;
-    buffer[i+1] = a;
   }
 }
