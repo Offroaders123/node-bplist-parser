@@ -82,7 +82,8 @@ export function parseBuffer<T extends Property>(buffer: Uint8Array): T {
   const offsetTable: number[] = [];
 
   for (let i = 0; i < numObjects; i++) {
-    offsetTable[i] = readUInt(view, offsetTableOffset + i * offsetSize, (offsetTableOffset + (i + 1) * offsetSize) - (offsetTableOffset + i * offsetSize));
+    const blockLength = (offsetTableOffset + (i + 1) * offsetSize) - (offsetTableOffset + i * offsetSize);
+    offsetTable[i] = readUInt(view, offsetTableOffset + i * offsetSize, blockLength);
     if (debug) {
       console.log("Offset for Object #" + i + " is " + offsetTable[i] + " [" + offsetTable[i]!.toString(16) + "]");
     }
@@ -175,7 +176,8 @@ export function parseBuffer<T extends Property>(buffer: Uint8Array): T {
     function parseUID(): UIDProperty {
       const length = objInfo + 1;
       if (length < maxObjectSize) {
-        return new UID(readUInt(view, offset + 1, (offset + 1 + length) - (offset + 1)));
+        const blockLength = (offset + 1 + length) - (offset + 1);
+        return new UID(readUInt(view, offset + 1, blockLength));
       }
       throw new Error("Too little heap space available! Wanted to read " + length + " bytes, but only " + maxObjectSize + " are available.");
     }
@@ -218,7 +220,8 @@ export function parseBuffer<T extends Property>(buffer: Uint8Array): T {
         const intInfo = int_type & 0x0F;
         const intLength = Math.pow(2, intInfo);
         dataoffset = 2 + intLength;
-        length = readUInt(view, offset + 2, (offset + 2 + intLength) - (offset + 2));
+        const blockLength = (offset + 2 + intLength) - (offset + 2);
+        length = readUInt(view, offset + 2, blockLength);
       }
       if (length < maxObjectSize) {
         return buffer.subarray(offset + dataoffset, offset + dataoffset + length);
@@ -240,7 +243,8 @@ export function parseBuffer<T extends Property>(buffer: Uint8Array): T {
         const intInfo = int_type & 0x0F;
         const intLength = Math.pow(2, intInfo);
         stroffset = 2 + intLength;
-        length = readUInt(view, offset + 2, (offset + 2 + intLength) - (offset + 2));
+        const blockLength = (offset + 2 + intLength) - (offset + 2);
+        length = readUInt(view, offset + 2, blockLength);
       }
       // length is String length -> to get byte length multiply by 2, as 1 character takes 2 bytes in UTF-16
       length *= (charLength + 1);
@@ -266,14 +270,16 @@ export function parseBuffer<T extends Property>(buffer: Uint8Array): T {
         const intInfo = int_type & 0x0F;
         const intLength = Math.pow(2, intInfo);
         arrayoffset = 2 + intLength;
-        length = readUInt(view, offset + 2, (offset + 2 + intLength) - (offset + 2));
+        const blockLength = (offset + 2 + intLength) - (offset + 2);
+        length = readUInt(view, offset + 2, blockLength);
       }
       if (length * objectRefSize > maxObjectSize) {
         throw new Error("Too little heap space available!");
       }
       const array: ArrayProperty<T> = [];
       for (let i = 0; i < length; i++) {
-        const objRef = readUInt(view, offset + arrayoffset + i * objectRefSize, (offset + arrayoffset + (i + 1) * objectRefSize) - (offset + arrayoffset + i * objectRefSize));
+        const blockLength = (offset + arrayoffset + (i + 1) * objectRefSize) - (offset + arrayoffset + i * objectRefSize);
+        const objRef = readUInt(view, offset + arrayoffset + i * objectRefSize, blockLength);
         array[i] = parseObject(objRef);
       }
       return array;
@@ -291,7 +297,8 @@ export function parseBuffer<T extends Property>(buffer: Uint8Array): T {
         const intInfo = int_type & 0x0F;
         const intLength = Math.pow(2, intInfo);
         dictoffset = 2 + intLength;
-        length = readUInt(view, offset + 2, (offset + 2 + intLength) - (offset + 2));
+        const blockLength = (offset + 2 + intLength) - (offset + 2);
+        length = readUInt(view, offset + 2, blockLength);
       }
       if (length * 2 * objectRefSize > maxObjectSize) {
         throw new Error("Too little heap space available!");
@@ -301,8 +308,10 @@ export function parseBuffer<T extends Property>(buffer: Uint8Array): T {
       }
       const dict: DictionaryProperty = {};
       for (let i = 0; i < length; i++) {
-        const keyRef = readUInt(view, offset + dictoffset + i * objectRefSize, (offset + dictoffset + (i + 1) * objectRefSize) - (offset + dictoffset + i * objectRefSize));
-        const valRef = readUInt(view, offset + dictoffset + (length * objectRefSize) + i * objectRefSize, (offset + dictoffset + (length * objectRefSize) + (i + 1) * objectRefSize) - (offset + dictoffset + (length * objectRefSize) + i * objectRefSize));
+        const keyBlockLength = (offset + dictoffset + (i + 1) * objectRefSize) - (offset + dictoffset + i * objectRefSize);
+        const keyRef = readUInt(view, offset + dictoffset + i * objectRefSize, keyBlockLength);
+        const valBlockLength = (offset + dictoffset + (length * objectRefSize) + (i + 1) * objectRefSize) - (offset + dictoffset + (length * objectRefSize) + i * objectRefSize);
+        const valRef = readUInt(view, offset + dictoffset + (length * objectRefSize) + i * objectRefSize, valBlockLength);
         const key = parseObject(keyRef);
         if (typeof key !== "string") {
           throw new Error("Parsed unexpected property key type, should be a string.");
