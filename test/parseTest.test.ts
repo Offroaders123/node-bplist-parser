@@ -1,10 +1,24 @@
 import { deepEqual, strictEqual } from 'node:assert';
+import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
-import { parseFile, parseFileSync } from '../src/bplistParser.js';
+import { parseBuffer } from '../src/bplistParser.js';
+
+import type { Property } from '../src/bplistParser.js';
 
 const __dirname = dirname(fileURLToPath(new URL(import.meta.url)));
+
+async function parseFile<T extends Property>(path: string): Promise<[T]> {
+  const buffer = await readFile(path);
+  return parseBuffer<T>(buffer);
+}
+
+function parseFileSync<T extends Property>(path: string): [T] {
+  const buffer = readFileSync(path);
+  return parseBuffer(buffer);
+}
 
 describe('bplist-parser', function () {
   it('iTunes Small', async function () {

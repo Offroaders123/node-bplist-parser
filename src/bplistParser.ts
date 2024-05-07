@@ -1,4 +1,3 @@
-import { readFile, readFileSync } from 'node:fs';
 const debug = false;
 
 export type Property = SimpleProperty | IntegerProperty | UIDProperty | RealProperty | DateProperty | DataProperty | StringProperty | ArrayProperty<Property> | DictionaryProperty;
@@ -40,42 +39,6 @@ export class UID {
   constructor(id: number) {
     this.UID = id;
   }
-}
-
-export function parseFile<T extends Property>(fileNameOrBuffer: string | Uint8Array, callback?: (error: Error | null, result?: [T]) => void): Promise<[T]> {
-  return new Promise((resolve, reject) => {
-    function tryParseBuffer(buffer: Uint8Array): void {
-      let err: Error | null = null;
-      let result: [T] | undefined;
-      try {
-        result = parseBuffer(buffer);
-        resolve(result);
-      } catch (ex) {
-        err = ex instanceof Error ? ex : new Error(`${ex}`);
-        reject(err);
-      } finally {
-        callback?.(err, result);
-      }
-    }
-
-    if (typeof fileNameOrBuffer !== "string") {
-      return tryParseBuffer(fileNameOrBuffer);
-    }
-    readFile(fileNameOrBuffer, (err, data) => {
-      if (err) {
-        reject(err);
-        return callback?.(err);
-      }
-      tryParseBuffer(data);
-    });
-  });
-}
-
-export function parseFileSync<T extends Property>(fileNameOrBuffer: string | Uint8Array): [T] {
-  if (typeof fileNameOrBuffer === "string") {
-    fileNameOrBuffer = readFileSync(fileNameOrBuffer);
-  }
-  return parseBuffer(fileNameOrBuffer);
 }
 
 export function parseBuffer<T extends Property>(buffer: Uint8Array): [T] {
