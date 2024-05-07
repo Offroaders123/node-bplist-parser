@@ -9,7 +9,7 @@ import type { Property } from '../src/bplistParser.js';
 
 const __dirname = dirname(fileURLToPath(new URL(import.meta.url)));
 
-async function parseFile<T extends Property>(path: string): Promise<[T]> {
+async function parseFile<T extends Property>(path: string): Promise<T> {
   const buffer = await readFile(path);
   return parseBuffer<T>(buffer);
 }
@@ -19,7 +19,7 @@ describe('bplist-parser', function () {
     const file = join(__dirname, "iTunes-small.bplist");
     const startTime1 = new Date().getTime();
 
-    const [dict] = await parseFile<any>(file);
+    const dict = await parseFile<any>(file);
     const endTime = new Date().getTime();
     console.log('Parsed "' + file + '" in ' + (endTime - startTime1) + 'ms');
     strictEqual(dict['Application Version'], "9.0.3");
@@ -30,7 +30,7 @@ describe('bplist-parser', function () {
     const file = join(__dirname, "sample1.bplist");
     const startTime = new Date().getTime();
 
-    const [dict] = await parseFile<any>(file);
+    const dict = await parseFile<any>(file);
     const endTime = new Date().getTime();
     console.log('Parsed "' + file + '" in ' + (endTime - startTime) + 'ms');
 
@@ -41,7 +41,7 @@ describe('bplist-parser', function () {
     const file = join(__dirname, "sample2.bplist");
     const startTime = new Date().getTime();
 
-    const [dict] = await parseFile<any>(file);
+    const dict = await parseFile<any>(file);
     const endTime = new Date().getTime();
     console.log('Parsed "' + file + '" in ' + (endTime - startTime) + 'ms');
 
@@ -52,7 +52,7 @@ describe('bplist-parser', function () {
     const file = join(__dirname, "airplay.bplist");
     const startTime = new Date().getTime();
 
-    const [dict] = await parseFile<any>(file);
+    const dict = await parseFile<any>(file);
     const endTime = new Date().getTime();
     console.log('Parsed "' + file + '" in ' + (endTime - startTime) + 'ms');
 
@@ -64,7 +64,7 @@ describe('bplist-parser', function () {
     const file = join(__dirname, "utf16.bplist");
     const startTime = new Date().getTime();
 
-    const [dict] = await parseFile<any>(file);
+    const dict = await parseFile<any>(file);
     const endTime = new Date().getTime();
     console.log('Parsed "' + file + '" in ' + (endTime - startTime) + 'ms');
 
@@ -77,7 +77,7 @@ describe('bplist-parser', function () {
     const file = join(__dirname, "utf16_chinese.plist");
     const startTime = new Date().getTime();
 
-    const [dict] = await parseFile<any>(file);
+    const dict = await parseFile<any>(file);
     const endTime = new Date().getTime();
     console.log('Parsed "' + file + '" in ' + (endTime - startTime) + 'ms');
 
@@ -89,7 +89,7 @@ describe('bplist-parser', function () {
     const file = join(__dirname, "uid.bplist");
     const startTime = new Date().getTime();
 
-    const [dict] = await parseFile<any>(file);
+    const dict = await parseFile<any>(file);
     const endTime = new Date().getTime();
     console.log('Parsed "' + file + '" in ' + (endTime - startTime) + 'ms');
 
@@ -102,7 +102,7 @@ describe('bplist-parser', function () {
     const file = join(__dirname, "int64.bplist");
     const startTime = new Date().getTime();
 
-    const [dict] = await parseFile<any>(file);
+    const dict = await parseFile<any>(file);
     const endTime = new Date().getTime();
     console.log('Parsed "' + file + '" in ' + (endTime - startTime) + 'ms');
 

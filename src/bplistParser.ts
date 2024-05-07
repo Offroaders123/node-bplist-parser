@@ -22,8 +22,8 @@ export interface DictionaryProperty {
   [key: string]: Property;
 }
 
-export const maxObjectSize = 100 ** 8; // 100Meg
-export const maxObjectCount = 32768;
+const maxObjectSize = 100 ** 8; // 100Meg
+const maxObjectCount = 32768;
 
 // EPOCH = new SimpleDateFormat("yyyy MM dd zzz").parse("2001 01 01 GMT").getTime();
 // ...but that's annoying in a static initializer because it can throw exceptions, ick.
@@ -41,7 +41,7 @@ export class UID {
   }
 }
 
-export function parseBuffer<T extends Property>(buffer: Uint8Array): [T] {
+export function parseBuffer<T extends Property>(buffer: Uint8Array): T {
   // check header
   const header: string = textDecoder.decode(buffer.subarray(0, 'bplist'.length));
   if (header !== 'bplist') {
@@ -334,7 +334,7 @@ export function parseBuffer<T extends Property>(buffer: Uint8Array): [T] {
     }
   }
 
-  return [ parseObject(topObject) ];
+  return parseObject(topObject);
 }
 
 function readUInt(buffer: Uint8Array, start?: number): number {
